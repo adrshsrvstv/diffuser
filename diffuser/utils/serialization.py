@@ -44,10 +44,10 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0'):
     ## @TODO : remove results folder from within trainer class
     trainer_config._dict['results_folder'] = os.path.join(*loadpath)
 
-    dataset = dataset_config()
-    renderer = render_config()
-    model = model_config()
-    diffusion = diffusion_config(model)
+    dataset = dataset_config() # calling this config object
+    renderer = render_config() # Maze2dRenderer for maze2d
+    model = model_config() # TemporalUnet for maze2d
+    diffusion = diffusion_config(model) # GaussianDiffusion
     trainer = trainer_config(diffusion, dataset, renderer)
 
     if epoch == 'latest':
@@ -57,4 +57,4 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0'):
 
     trainer.load(epoch)
 
-    return DiffusionExperiment(dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch)
+    return DiffusionExperiment(dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch) #just a tuple named Diffusion

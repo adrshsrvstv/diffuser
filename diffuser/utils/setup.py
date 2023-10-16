@@ -50,7 +50,7 @@ class Parser(Tap):
         args = super().parse_args(known_only=True)
         ## if not loading from a config script, skip the result of the setup
         if not hasattr(args, 'config'): return args
-        args = self.read_config(args, experiment)
+        args = self.read_config(args, experiment) # experiment is 'plan' or 'diffusion'
         self.add_extras(args)
         self.eval_fstrings(args)
         self.set_seed(args)
@@ -64,12 +64,12 @@ class Parser(Tap):
         '''
             Load parameters from config file
         '''
-        dataset = args.dataset.replace('-', '_')
+        dataset = args.dataset.replace('-', '_') #'maze2d-umaze-v1'  to 'maze2d_umaze_v1'
         print(f'[ utils/setup ] Reading config: {args.config}:{dataset}')
-        module = importlib.import_module(args.config)
-        params = getattr(module, 'base')[experiment]
+        module = importlib.import_module(args.config) #config.maze2d import
+        params = getattr(module, 'base')[experiment] # base config, as opposed to overrides
 
-        if hasattr(module, dataset) and experiment in getattr(module, dataset):
+        if hasattr(module, dataset) and experiment in getattr(module, dataset): # check for dataset and experiment specific overrides here if present
             print(f'[ utils/setup ] Using overrides | config: {args.config} | dataset: {dataset}')
             overrides = getattr(module, dataset)[experiment]
             params.update(overrides)
@@ -78,10 +78,10 @@ class Parser(Tap):
 
         self._dict = {}
         for key, val in params.items():
-            setattr(args, key, val)
+            setattr(args, key, val) # put these params in args
             self._dict[key] = val
 
-        return args
+        return args # args now has everything needed
 
     def add_extras(self, args):
         '''

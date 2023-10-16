@@ -59,9 +59,9 @@ base = {
         ## training
         'n_steps_per_epoch': 10000,
         'loss_type': 'l2',
-        'n_train_steps': 2e6,
+        'n_train_steps': 2e5,
         'batch_size': 32,
-        'learning_rate': 2e-4,
+        'learning_rate': 2e-3,
         'gradient_accumulate_every': 2,
         'ema_decay': 0.995,
         'save_freq': 1000,

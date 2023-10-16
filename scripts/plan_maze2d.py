@@ -3,13 +3,17 @@ import numpy as np
 from os.path import join
 import pdb
 
+import os
+cwd = os.getcwd()
+print("cwd: ", cwd)
+
 from diffuser.guides.policies import Policy
 import diffuser.datasets as datasets
 import diffuser.utils as utils
 
 
-class Parser(utils.Parser):
-    dataset: str = 'maze2d-umaze-v1'
+class Parser(utils.Parser): # these are the args present in parse_args
+    dataset: str = 'maze2d-umaze-v1'#'maze2d-large-v1' #
     config: str = 'config.maze2d'
 
 #---------------------------------- setup ----------------------------------#
@@ -18,11 +22,13 @@ args = Parser().parse_args('plan')
 
 # logger = utils.Logger(args)
 
-env = datasets.load_environment(args.dataset)
+env = datasets.load_environment(args.dataset) #datasets is just a wrapper for d4rl
 
 #---------------------------------- loading ----------------------------------#
 
 diffusion_experiment = utils.load_diffusion(args.logbase, args.dataset, args.diffusion_loadpath, epoch=args.diffusion_epoch)
+# logbase is just the base dir for logs
+# rest of the args just form the path
 
 diffusion = diffusion_experiment.ema
 dataset = diffusion_experiment.dataset
