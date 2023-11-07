@@ -37,6 +37,7 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0'):
     dataset_config = load_config(*loadpath, 'dataset_config.pkl')
     render_config = load_config(*loadpath, 'render_config.pkl')
     model_config = load_config(*loadpath, 'model_config.pkl')
+    prior_config = load_config(*loadpath, 'prior_config.pkl')
     diffusion_config = load_config(*loadpath, 'diffusion_config.pkl')
     trainer_config = load_config(*loadpath, 'trainer_config.pkl')
 
@@ -47,7 +48,8 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0'):
     dataset = dataset_config() # calling this config object
     renderer = render_config() # Maze2dRenderer for maze2d
     model = model_config() # TemporalUnet for maze2d
-    diffusion = diffusion_config(model) # GaussianDiffusion
+    prior = prior_config()
+    diffusion = diffusion_config(model, prior) # GaussianDiffusion
     trainer = trainer_config(diffusion, dataset, renderer)
 
     if epoch == 'latest':

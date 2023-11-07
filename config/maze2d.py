@@ -11,6 +11,8 @@ diffusion_args_to_watch = [
     ('prefix', ''),
     ('horizon', 'H'),
     ('n_diffusion_steps', 'T'),
+    ('diffusion', ''),
+    ('prior', ''),
 ]
 
 
@@ -32,7 +34,9 @@ base = {
     'diffusion': {
         ## model
         'model': 'models.TemporalUnet',
-        'diffusion': 'models.GaussianDiffusion',
+        # 'diffusion': 'models.GaussianDiffusion',
+        'diffusion': 'models.SBDiffusion',
+        'prior': 'utils.Prior',
         'horizon': 256,
         'n_diffusion_steps': 256,
         'action_weight': 1,
@@ -75,6 +79,10 @@ base = {
     },
 
     'plan': {
+        'diffusion': 'models.GaussianDiffusion',
+        # 'diffusion': 'models.SBDiffusion',
+        'prior': 'utils.NaivePrior',
+
         'batch_size': 1,
         'device': 'cuda',
 
@@ -93,7 +101,7 @@ base = {
         'conditional': False,
 
         ## loading
-        'diffusion_loadpath': 'f:diffusion/H{horizon}_T{n_diffusion_steps}',
+        'diffusion_loadpath': 'f:diffusion/H{horizon}_T{n_diffusion_steps}_{diffusion}_{prior}',
         'diffusion_epoch': 'latest',
     },
 

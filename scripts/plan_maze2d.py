@@ -54,7 +54,7 @@ cond = {
 rollout = [observation.copy()]
 
 total_reward = 0
-for t in range(env.max_episode_steps):
+for t in range(args.horizon):
 
     state = env.state_vector().copy()
 
@@ -77,7 +77,8 @@ for t in range(env.max_episode_steps):
         # pdb.set_trace()
 
     ## can use actions or define a simple controller based on state predictions
-    action = next_waypoint[:2] - state[:2] + (next_waypoint[2:] - state[2:])
+    # action = actions[t]
+    action = next_waypoint[:2] - state[:2] + (next_waypoint[2:] - state[2:]) # qpos - curr_pos + qvel- curr_vel
     # pdb.set_trace()
     ####
 

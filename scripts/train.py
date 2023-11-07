@@ -55,6 +55,11 @@ model_config = utils.Config(
     device=args.device,
 )
 
+prior_config = utils.Config(
+    args.prior,
+    savepath=(args.savepath, 'prior_config.pkl'),
+)
+
 diffusion_config = utils.Config(
     args.diffusion,
     savepath=(args.savepath, 'diffusion_config.pkl'),
@@ -94,8 +99,8 @@ trainer_config = utils.Config(
 #-----------------------------------------------------------------------------#
 
 model = model_config()
-
-diffusion = diffusion_config(model)
+prior = prior_config()
+diffusion = diffusion_config(model, prior)
 
 trainer = trainer_config(diffusion, dataset, renderer)
 

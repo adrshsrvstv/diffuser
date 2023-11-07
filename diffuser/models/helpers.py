@@ -72,6 +72,21 @@ def extract(a, t, x_shape):
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
 
+def compute_gaussian_product_coef(sigma1, sigma2):
+    """ Given p1 = N(x_t|x_0, sigma_1**2) and p2 = N(x_t|x_1, sigma_2**2)
+        return p1 * p2 = N(x_t| coef1 * x0 + coef2 * x1, var) """
+
+    denom = sigma1**2 + sigma2**2
+    coef1 = sigma2**2 / denom
+    coef2 = sigma1**2 / denom
+    var = (sigma1**2 * sigma2**2) / denom
+    return coef1, coef2, var
+
+def increasing_decreasing_beta_schedule(timesteps=1000, linear_start=1e-4, linear_end=2e-2):
+    betas = np.linspace(linear_start ** 0.5, linear_end ** 0.5, timesteps) ** 2
+    betas_inc_dec = np.concatenate([betas[:timesteps // 2], np.flip(betas[:timesteps // 2])])
+    return betas_inc_dec
+
 def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):
     """
     cosine schedule
@@ -90,6 +105,9 @@ def apply_conditioning(x, conditions, action_dim):
         x[:, t, action_dim:] = val.clone()
     return x
 
+def unsqueeze_xdim(z, xdim):
+    bc_dim = (...,) + (None,) * len(xdim)
+    return z[bc_dim]
 
 #-----------------------------------------------------------------------------#
 #---------------------------------- losses -----------------------------------#
