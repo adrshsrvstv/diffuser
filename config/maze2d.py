@@ -11,8 +11,10 @@ diffusion_args_to_watch = [
     ('prefix', ''),
     ('horizon', 'H'),
     ('n_diffusion_steps', 'T'),
+    ('nfe', 'N'),
     ('diffusion', ''),
     ('prior', ''),
+    ('n_train_steps', ''),
 ]
 
 
@@ -21,12 +23,16 @@ plan_args_to_watch = [
     ##
     ('horizon', 'H'),
     ('n_diffusion_steps', 'T'),
-    ('value_horizon', 'V'),
-    ('discount', 'd'),
-    ('normalizer', ''),
-    ('batch_size', 'b'),
-    ##
-    ('conditional', 'cond'),
+    ('nfe', 'N'),
+    ('diffusion', ''),
+    ('prior', ''),
+    ('n_train_steps', ''),
+    # ('value_horizon', 'V'),
+    # ('discount', 'd'),
+    # ('normalizer', ''),
+    # ('batch_size', 'b'),
+    # ##
+    # ('conditional', 'cond'),
 ]
 
 base = {
@@ -34,9 +40,10 @@ base = {
     'diffusion': {
         ## model
         'model': 'models.TemporalUnet',
-        # 'diffusion': 'models.GaussianDiffusion',
-        'diffusion': 'models.SBDiffusion',
-        'prior': 'utils.Prior',
+        # 'diffusion': 'GaussianDiffusion',
+        'diffusion': 'SBDiffusion',
+        'prior': 'BasePrior',
+        'nfe': 63,
         'horizon': 256,
         'n_diffusion_steps': 256,
         'action_weight': 1,
@@ -63,9 +70,9 @@ base = {
         ## training
         'n_steps_per_epoch': 10000,
         'loss_type': 'l2',
-        'n_train_steps': 2e5,
+        'n_train_steps': 2e6,
         'batch_size': 32,
-        'learning_rate': 2e-3,
+        'learning_rate': 2e-4,
         'gradient_accumulate_every': 2,
         'ema_decay': 0.995,
         'save_freq': 1000,
@@ -79,9 +86,10 @@ base = {
     },
 
     'plan': {
-        'diffusion': 'models.GaussianDiffusion',
-        # 'diffusion': 'models.SBDiffusion',
-        'prior': 'utils.NaivePrior',
+        # 'diffusion': 'GaussianDiffusion',
+        'diffusion': 'SBDiffusion',
+        'prior': 'BasePrior',
+        'nfe': 63,
 
         'batch_size': 1,
         'device': 'cuda',
@@ -101,7 +109,7 @@ base = {
         'conditional': False,
 
         ## loading
-        'diffusion_loadpath': 'f:diffusion/H{horizon}_T{n_diffusion_steps}_{diffusion}_{prior}',
+        'diffusion_loadpath': 'f:diffusion/H{horizon}_T{n_diffusion_steps}_N{nfe}_{diffusion}_{prior}_{n_train_steps}',
         'diffusion_epoch': 'latest',
     },
 
@@ -120,10 +128,12 @@ maze2d_umaze_v1 = {
     'diffusion': {
         'horizon': 128,
         'n_diffusion_steps': 64,
+        'nfe': 63,
     },
     'plan': {
         'horizon': 128,
         'n_diffusion_steps': 64,
+        'nfe': 63,
     },
 }
 
@@ -131,9 +141,11 @@ maze2d_large_v1 = {
     'diffusion': {
         'horizon': 384,
         'n_diffusion_steps': 256,
+        'nfe': 63,
     },
     'plan': {
         'horizon': 384,
         'n_diffusion_steps': 256,
+        'nfe': 63,
     },
 }

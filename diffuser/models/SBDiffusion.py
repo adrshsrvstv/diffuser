@@ -5,19 +5,18 @@ import pdb
 
 import diffuser.utils as utils
 from .helpers import (
-    cosine_beta_schedule,
     increasing_decreasing_beta_schedule,
     compute_gaussian_product_coef,
-    extract,
     apply_conditioning,
     unsqueeze_xdim,
     Losses,
+    space_indices,
 )
 
 class SBDiffusion(nn.Module):
-    def __init__(self, model, prior, horizon, observation_dim, action_dim, n_timesteps=1000,
+    def __init__(self, model, prior, horizon, observation_dim, action_dim, n_timesteps=1000, nfe=64,
         loss_type='l2', clip_denoised=False, predict_epsilon=True,
-        action_weight=1.0, loss_discount=1.0, loss_weights=None,
+        action_weight=1.0, loss_discount=1.0, loss_weights=None
     ):
         super().__init__()
         self.horizon = horizon
@@ -28,6 +27,7 @@ class SBDiffusion(nn.Module):
         assert  prior is not None
         self.prior = prior
         self.n_timesteps = int(n_timesteps)
+        self.nfe = int(nfe)
 
         betas = increasing_decreasing_beta_schedule(n_timesteps)
         # compute analytic std: eq 11
@@ -89,77 +89,61 @@ class SBDiffusion(nn.Module):
         label = (xt - x0) / std_fwd
         return label.detach()
 
+    @torch.no_grad()
+    def p_posterior(self, t_prev, t, xt, x0):
+        """ Sample p(x_{nprev} | x_n, x_0), i.e. eq 4"""
+        assert t_prev < t
+        std_n     = self.std_fwd[t]
+        std_t_prev = self.std_fwd[t_prev]
+        std_delta = (std_n**2 - std_t_prev**2).sqrt()
+
+        mu_x0, mu_xn, var = compute_gaussian_product_coef(std_t_prev, std_delta)
+        xt_prev = mu_x0 * x0 + mu_xn * xt + var.sqrt() * torch.randn_like(x0)
+
+        return xt_prev
+
     def compute_pred_x0(self, t, xt, net_out):
         """ Given network output, recover x0. This should be the inverse of Eq 12 """
         std_fwd = self.get_std_fwd(t, xdim=xt.shape[1:])
         pred_x0 = xt - std_fwd * net_out
         return pred_x0
 
-    def p_posterior(self, nprev, n, x_n, x0):
-        """ Sample p(x_{nprev} | x_n, x_0), i.e. eq 4"""
+    @torch.no_grad()
+    def p_sample_loop(self, x1, cond, verbose=True ):
+        device = self.betas.device
+        batch_size = x1.shape[0]
 
-        assert nprev < n
-        std_n     = self.std_fwd[n]
-        std_nprev = self.std_fwd[nprev]
-        std_delta = (std_n**2 - std_nprev**2).sqrt()
+        steps = space_indices(self.n_timesteps, self.nfe + 1)
+        log_count = min(len(steps) - 1, 10)
+        log_steps = [steps[i] for i in space_indices(len(steps) - 1, log_count)]
 
-        mu_x0, mu_xn, var = compute_gaussian_product_coef(std_nprev, std_delta)
+        steps = steps[::-1]
+        pair_steps = list(zip(steps[:-1], steps[1:])) #[(99, 79), (79, 59), (59, 40), (40, 20), (20, 0)]
 
-        xt_prev = mu_x0 * x0 + mu_xn * x_n + var.sqrt() * torch.randn_like(x0)
-
-        return xt_prev
-
-    def ddpm_sampling(self, steps, pred_x0_fn, x1, mask=None, ot_ode=False, log_steps=None, verbose=True):
-        xt = x1.detach().to(self.device)
-
+        xt = x1.detach().to(device)
         xs = []
         pred_x0s = []
 
-        log_steps = log_steps or steps
-        assert steps[0] == log_steps[0] == 0
+        progress = utils.Progress(len(pair_steps)) if verbose else utils.Silent()
 
-        steps = steps[::-1]
+        for t, t_prev in pair_steps:
+            timesteps = torch.full((batch_size,), t, device=device, dtype=torch.long)
 
-        pair_steps = zip(steps[1:], steps[:-1])
-        pair_steps = tqdm(pair_steps, desc='DDPM sampling', total=len(steps)-1) if verbose else pair_steps
-        for prev_step, step in pair_steps:
-            assert prev_step < step, f"{prev_step=}, {step=}"
+            pred_x0 = self.compute_pred_x0(timesteps, xt, self.model(xt, cond, t))
+            xt = self.p_posterior(t_prev, t, xt, pred_x0)
+            xt = apply_conditioning(xt, cond, self.action_dim)
 
-            pred_x0 = pred_x0_fn(xt, step)
-            xt = self.p_posterior(prev_step, step, xt, pred_x0, ot_ode=ot_ode)
+            # if t_prev in log_steps:
+            #     pred_x0s.append(pred_x0.detach().cpu())
+            #     xs.append(xt.detach().cpu())
 
-            if mask is not None:
-                xt_true = x1
-                if not ot_ode:
-                    _prev_step = torch.full((xt.shape[0],), prev_step, device=self.device, dtype=torch.long)
-                    std_sb = unsqueeze_xdim(self.std_sb[_prev_step], xdim=x1.shape[1:])
-                    xt_true = xt_true + std_sb * torch.randn_like(xt_true)
-                xt = (1. - mask) * xt_true + mask * xt
+            progress.update({'t': t})
 
-            if prev_step in log_steps:
-                pred_x0s.append(pred_x0.detach().cpu())
-                xs.append(xt.detach().cpu())
-
-        stack_bwd_traj = lambda z: torch.flip(torch.stack(z, dim=1), dims=(1,))
-        return stack_bwd_traj(xs), stack_bwd_traj(pred_x0s)
-
-    @torch.no_grad()
-    def p_sample_loop(self, x1, cond, verbose=True, ):
-        device = self.betas.device
-        batch_size = x1[0]
-
-        x = apply_conditioning(x1, cond, self.action_dim)
-
-
-        progress = utils.Progress(self.n_timesteps) if verbose else utils.Silent()
-        for i in reversed(range(0, self.n_timesteps)):
-            timesteps = torch.full((batch_size,), i, device=device, dtype=torch.long)
-            x = self.p_sample(x, cond, timesteps)
-            x = apply_conditioning(x, cond, self.action_dim)
-            progress.update({'t': i})
         progress.close()
 
-        return x
+        # stack_bwd_traj = lambda z: torch.flip(torch.stack(z, dim=1), dims=(1,))
+        # return stack_bwd_traj(xs), stack_bwd_traj(pred_x0s)
+        return xt
 
     # ------------------------------------------ training ------------------------------------------#
 
@@ -181,6 +165,7 @@ class SBDiffusion(nn.Module):
         label = self.compute_label(t, x0, xt)
 
         pred = self.model(xt, cond, t)
+        # should we condition the pred here?
         assert xt.shape == label.shape == pred.shape
 
         return self.loss_fn(pred, label)

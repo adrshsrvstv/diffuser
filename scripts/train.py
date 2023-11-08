@@ -56,21 +56,22 @@ model_config = utils.Config(
 )
 
 prior_config = utils.Config(
-    args.prior,
+    'utils.'+ args.prior,
     savepath=(args.savepath, 'prior_config.pkl'),
 )
 
 diffusion_config = utils.Config(
-    args.diffusion,
+    'models.'+ args.diffusion,
     savepath=(args.savepath, 'diffusion_config.pkl'),
     horizon=args.horizon,
     observation_dim=observation_dim,
     action_dim=action_dim,
     n_timesteps=args.n_diffusion_steps,
+    nfe=args.nfe,
     loss_type=args.loss_type,
     clip_denoised=args.clip_denoised,
     predict_epsilon=args.predict_epsilon,
-    ## loss weighting
+    ## loss weightings
     action_weight=args.action_weight,
     loss_weights=args.loss_weights,
     loss_discount=args.loss_discount,

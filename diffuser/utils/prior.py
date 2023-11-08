@@ -3,14 +3,14 @@ import numpy as np
 from math import atan2, sin, cos
 import torch
 
-class Prior:
+class BasePrior:
     def __call__(self, cond, horizon, transition_dim, device):
         shape = (len(cond[0]), horizon, transition_dim)
         x = torch.randn(shape, device=device)
         return x
 
 
-class NaivePrior(Prior):
+class NaivePrior(BasePrior):
     def __init__(self):
         super().__init__()
 
