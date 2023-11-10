@@ -42,7 +42,7 @@ base = {
         'model': 'models.TemporalUnet',
         # 'diffusion': 'GaussianDiffusion',
         'diffusion': 'SBDiffusion',
-        'prior': 'BasePrior',
+        'prior': 'Maze2DGoalPrior',
         'nfe': 63,
         'horizon': 256,
         'n_diffusion_steps': 256,
@@ -70,7 +70,7 @@ base = {
         ## training
         'n_steps_per_epoch': 10000,
         'loss_type': 'l2',
-        'n_train_steps': 2e6,
+        'n_train_steps': 2e5,
         'batch_size': 32,
         'learning_rate': 2e-4,
         'gradient_accumulate_every': 2,
@@ -88,8 +88,9 @@ base = {
     'plan': {
         # 'diffusion': 'GaussianDiffusion',
         'diffusion': 'SBDiffusion',
-        'prior': 'BasePrior',
+        'prior': 'Maze2DGoalPrior',
         'nfe': 63,
+        'n_train_steps': 2e5,
 
         'batch_size': 1,
         'device': 'cuda',
@@ -128,12 +129,12 @@ maze2d_umaze_v1 = {
     'diffusion': {
         'horizon': 128,
         'n_diffusion_steps': 64,
-        'nfe': 63,
+        'nfe': 4,
     },
     'plan': {
         'horizon': 128,
         'n_diffusion_steps': 64,
-        'nfe': 63,
+        'nfe': 4,
     },
 }
 

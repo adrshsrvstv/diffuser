@@ -57,6 +57,8 @@ model_config = utils.Config(
 
 prior_config = utils.Config(
     'utils.'+ args.prior,
+    transition_dim=observation_dim + action_dim,
+    horizon=args.horizon,
     savepath=(args.savepath, 'prior_config.pkl'),
 )
 

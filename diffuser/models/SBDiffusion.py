@@ -24,7 +24,6 @@ class SBDiffusion(nn.Module):
         self.action_dim = action_dim
         self.transition_dim = observation_dim + action_dim
         self.model = model
-        assert  prior is not None
         self.prior = prior
         self.n_timesteps = int(n_timesteps)
         self.nfe = int(nfe)
@@ -121,15 +120,15 @@ class SBDiffusion(nn.Module):
         pair_steps = list(zip(steps[:-1], steps[1:])) #[(99, 79), (79, 59), (59, 40), (40, 20), (20, 0)]
 
         xt = x1.detach().to(device)
-        xs = []
-        pred_x0s = []
+        # xs = []
+        # pred_x0s = []
 
         progress = utils.Progress(len(pair_steps)) if verbose else utils.Silent()
 
         for t, t_prev in pair_steps:
             timesteps = torch.full((batch_size,), t, device=device, dtype=torch.long)
 
-            pred_x0 = self.compute_pred_x0(timesteps, xt, self.model(xt, cond, t))
+            pred_x0 = self.compute_pred_x0(timesteps, xt, self.model(xt, cond, timesteps))
             xt = self.p_posterior(t_prev, t, xt, pred_x0)
             xt = apply_conditioning(xt, cond, self.action_dim)
 
@@ -145,6 +144,14 @@ class SBDiffusion(nn.Module):
         # return stack_bwd_traj(xs), stack_bwd_traj(pred_x0s)
         return xt
 
+    @torch.no_grad()
+    def conditional_sample(self, cond, *args, horizon=None, **kwargs):
+        '''
+            conditions : [ (time, state), ... ]
+        '''
+        device = self.betas.device
+        x1 = self.prior(cond, device)
+        return self.p_sample_loop(x1, cond, *args, **kwargs)
     # ------------------------------------------ training ------------------------------------------#
 
     def q_sample(self, t, x0, x1):
@@ -162,21 +169,23 @@ class SBDiffusion(nn.Module):
 
     def p_losses(self, x0, x1, cond, t):
         xt = self.q_sample(t, x0, x1)
+        xt = apply_conditioning(xt, cond, self.action_dim)
+
         label = self.compute_label(t, x0, xt)
 
         pred = self.model(xt, cond, t)
-        # should we condition the pred here?
+        pred = apply_conditioning(pred, cond, self.action_dim)
+
         assert xt.shape == label.shape == pred.shape
 
         return self.loss_fn(pred, label)
 
     def loss(self, x0, cond):
-        x1 = self.prior(cond, self.horizon, self.transition_dim, x0.device)
+        x1 = self.prior(cond, x0.device)
         batch_size = len(x0)
         t = torch.randint(0, self.n_timesteps, (batch_size,), device=x0.device).long()
         return self.p_losses(x0, x1, cond, t)
 
     def forward(self, cond, *args, **kwargs):
-        x1 = self.prior(cond, self.horizon, self.transition_dim, cond.device)
-        return self.p_sample_loop(x1, cond, *args, **kwargs)
+        return self.conditional_sample(cond=cond, *args, **kwargs)
 

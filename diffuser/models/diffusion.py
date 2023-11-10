@@ -135,7 +135,7 @@ class GaussianDiffusion(nn.Module):
         return model_mean + nonzero_mask * (0.5 * model_log_variance).exp() * noise
 
     @torch.no_grad()
-    def p_sample_loop(self, shape, cond, verbose=True, return_diffusion=False):
+    def p_sample_loop(self, shape, cond, verbose=False, return_diffusion=False):
         device = self.betas.device
 
         batch_size = shape[0]
