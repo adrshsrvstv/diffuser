@@ -18,7 +18,7 @@ class BasePrior:
 
 
 class Maze2DGoalPrior(BasePrior):
-    def __init__(self, transition_dim, horizon):
+    def __init__(self, transition_dim, horizon=128):
         super().__init__(transition_dim, horizon)
         nd = np.array([norm.pdf(x, (horizon + 1)/2, horizon/6) for x in np.linspace(1, horizon, horizon)]).reshape((horizon, 1))
         self.normal_distribution = (nd - nd.min()) / nd.max()

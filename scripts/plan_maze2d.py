@@ -51,7 +51,7 @@ cond = {
 rollout = [observation.copy()]
 
 total_reward = 0
-for t in range(args.horizon):
+for t in range(env.max_episode_steps):
 
     state = env.state_vector().copy()
 
