@@ -2,6 +2,7 @@ import numpy as np
 import scipy.stats
 import torch
 from scipy.stats import norm
+from diffuser.models.helpers import apply_conditioning
 
 class BasePrior:
     def __init__(self, transition_dim, horizon):
@@ -55,3 +56,25 @@ class Maze2DGoalPrior(BasePrior):
         qvels = np.array([qvels[i]*self.normal_distribution for i in range(0,len(qvels))])
         return qvels
 
+class Maze2DGoalPriorSteady(Maze2DGoalPrior):
+    def __call__(self, cond, device):
+        batch_size = len(cond[0])
+        shape = (batch_size, self.horizon, self.transition_dim)
+        start, goal = cond[0].detach().cpu().numpy(), cond[self.horizon - 1].detach().cpu().numpy()
+
+        actions, _ = self.get_action(start, goal)
+        qpos = self.get_qpos(start, goal)
+        qvel = self.get_qvel(start, goal)
+        trajectory = np.concatenate((actions, qpos, qvel), axis=2)
+        x1 = torch.tensor(trajectory, device=device, dtype=torch.float32)
+        x1 = apply_conditioning(x1, cond, 2)
+        assert x1.shape == shape
+        return x1
+
+    def get_qvel(self, start, goal):
+        mag = 100 * (goal - start) / (self.horizon - 1)
+        _, action_normed = self.get_action(start, goal)
+        qvel = mag[:, :2] * action_normed
+        qvels = np.repeat(qvel[:, np.newaxis, :], self.horizon, axis=1)
+        # qvels = np.array([qvels[i]*self.normal_distribution for i in range(0,len(qvels))])
+        return qvels

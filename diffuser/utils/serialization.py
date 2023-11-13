@@ -6,7 +6,7 @@ import pdb
 
 from collections import namedtuple
 
-DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model diffusion ema trainer epoch')
+DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model prior diffusion ema trainer epoch')
 
 def mkdir(savepath):
     """
@@ -59,4 +59,4 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0'):
 
     trainer.load(epoch)
 
-    return DiffusionExperiment(dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch) #just a tuple named Diffusion
+    return DiffusionExperiment(dataset, renderer, model, prior, diffusion, trainer.ema_model, trainer, epoch) #just a tuple named Diffusion

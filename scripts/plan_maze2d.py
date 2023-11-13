@@ -1,11 +1,7 @@
 import json
 import numpy as np
 from os.path import join
-import pdb
-
-import os
-cwd = os.getcwd()
-print("cwd: ", cwd)
+import torch
 
 from diffuser.guides.policies import Policy
 import diffuser.datasets as datasets
@@ -13,7 +9,7 @@ import diffuser.utils as utils
 
 
 class Parser(utils.Parser): # these are the args present in parse_args
-    dataset: str = 'maze2d-umaze-v1'#'maze2d-large-v1' #
+    dataset: str = 'maze2d-medium-v1'#'maze2d-large-v1' #
     config: str = 'config.maze2d'
 
 #---------------------------------- setup ----------------------------------#
@@ -33,6 +29,7 @@ diffusion_experiment = utils.load_diffusion(args.logbase, args.dataset, args.dif
 diffusion = diffusion_experiment.ema
 dataset = diffusion_experiment.dataset
 renderer = diffusion_experiment.renderer
+prior = diffusion_experiment.prior
 
 policy = Policy(diffusion, dataset.normalizer)
 
@@ -62,10 +59,13 @@ for t in range(args.horizon):
     ## that we really only need to plan once
     if t == 0:
         cond[0] = observation
-
         action, samples = policy(cond, batch_size=args.batch_size)
         actions = samples.actions[0]
         sequence = samples.observations[0]
+
+        if args.diffusion == 'SBDiffusion':
+            prior_sample = prior({k:torch.tensor(np.array([v]), device='cuda', dtype=torch.float32) for k,v in cond.items()}, 'cuda')
+            renderer.composite(join(args.savepath, 'prior.png'), prior_sample.detach().cpu().numpy()[:, :, 2:], ncol=1)
     # pdb.set_trace()
 
     # ####
@@ -75,7 +75,6 @@ for t in range(args.horizon):
         next_waypoint = sequence[-1].copy()
         next_waypoint[2:] = 0
         # pdb.set_trace()
-
     ## can use actions or define a simple controller based on state predictions
     # action = actions[t]
     action = next_waypoint[:2] - state[:2] + (next_waypoint[2:] - state[2:]) # qpos - curr_pos + qvel- curr_vel
@@ -105,7 +104,7 @@ for t in range(args.horizon):
         xy = next_observation[:2]
         goal = env.unwrapped._target
         print(
-            f'maze | pos: {xy} | goal: {goal}'
+            f'maze | actual position: {xy} | predicted position: {next_waypoint[:2]} | goal: {goal}'
         )
 
     ## update rollout observations

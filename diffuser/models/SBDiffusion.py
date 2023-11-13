@@ -174,7 +174,6 @@ class SBDiffusion(nn.Module):
         label = self.compute_label(t, x0, xt)
 
         pred = self.model(xt, cond, t)
-        pred = apply_conditioning(pred, cond, self.action_dim)
 
         assert xt.shape == label.shape == pred.shape
 
