@@ -120,6 +120,7 @@ class SBDiffusion(nn.Module):
         pair_steps = list(zip(steps[:-1], steps[1:])) #[(99, 79), (79, 59), (59, 40), (40, 20), (20, 0)]
 
         xt = x1.detach().to(device)
+        xt = apply_conditioning(xt, cond, self.action_dim)
         # xs = []
         # pred_x0s = []
 
@@ -149,8 +150,7 @@ class SBDiffusion(nn.Module):
         '''
             conditions : [ (time, state), ... ]
         '''
-        device = self.betas.device
-        x1 = self.prior(cond, device)
+        x1 = self.prior(cond)
         return self.p_sample_loop(x1, cond, *args, **kwargs)
     # ------------------------------------------ training ------------------------------------------#
 
@@ -174,13 +174,14 @@ class SBDiffusion(nn.Module):
         label = self.compute_label(t, x0, xt)
 
         pred = self.model(xt, cond, t)
+        pred = apply_conditioning(pred, cond, self.action_dim)
 
         assert xt.shape == label.shape == pred.shape
 
         return self.loss_fn(pred, label)
 
     def loss(self, x0, cond):
-        x1 = self.prior(cond, x0.device)
+        x1 = self.prior(cond)
         batch_size = len(x0)
         t = torch.randint(0, self.n_timesteps, (batch_size,), device=x0.device).long()
         return self.p_losses(x0, x1, cond, t)

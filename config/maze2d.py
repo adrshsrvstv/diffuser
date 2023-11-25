@@ -40,9 +40,9 @@ base = {
     'diffusion': {
         ## model
         'model': 'models.TemporalUnet',
-        'diffusion': 'GaussianDiffusion',
-        # 'diffusion': 'SBDiffusion',
-        'prior': 'Maze2DGoalPriorSteady',
+        # 'diffusion': 'GaussianDiffusion',
+        'diffusion': 'SBDiffusion',
+        'prior': 'BasePrior',
         'nfe': 63,
         'horizon': 256,
         'n_diffusion_steps': 256,
@@ -70,9 +70,9 @@ base = {
         ## training
         'n_steps_per_epoch': 10000,
         'loss_type': 'l2',
-        'n_train_steps': 5e5,
+        'n_train_steps': 25e4,
         'batch_size': 32,
-        'learning_rate': 4e-5,
+        'learning_rate': 1e-3,
         'gradient_accumulate_every': 2,
         'ema_decay': 0.995,
         'save_freq': 1000,
@@ -88,9 +88,9 @@ base = {
     'plan': {
         'diffusion': 'GaussianDiffusion',
         # 'diffusion': 'SBDiffusion',
-        'prior': 'Maze2DGoalPriorSteady',
+        'prior': 'BasePrior',
         'nfe': 63,
-        'n_train_steps': 5e5,
+        'n_train_steps': 25e4,
 
         'batch_size': 1,
         'device': 'cuda',
@@ -141,25 +141,25 @@ maze2d_umaze_v1 = {
 maze2d_medium_v1 = {
     'diffusion': {
         'horizon': 256,
-        'n_diffusion_steps': 16,
-        'nfe': 15,
+        'n_diffusion_steps': 2,
+        'nfe': 1,
     },
     'plan': {
         'horizon': 256,
-        'n_diffusion_steps': 16,
-        'nfe': 15,
+        'n_diffusion_steps': 8,
+        'nfe': 7,
     },
 }
 
 maze2d_large_v1 = {
     'diffusion': {
         'horizon': 384,
-        'n_diffusion_steps': 256,
-        'nfe': 63,
+        'n_diffusion_steps': 16,
+        'nfe': 1,
     },
     'plan': {
         'horizon': 384,
-        'n_diffusion_steps': 256,
-        'nfe': 63,
+        'n_diffusion_steps': 16,
+        'nfe': 1,
     },
 }

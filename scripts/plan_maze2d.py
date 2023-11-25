@@ -9,7 +9,7 @@ import diffuser.utils as utils
 
 
 class Parser(utils.Parser): # these are the args present in parse_args
-    dataset: str = 'maze2d-medium-v1'#'maze2d-large-v1' #
+    dataset: str = 'maze2d-large-v1'#'maze2d-large-v1' #
     config: str = 'config.maze2d'
 
 #---------------------------------- setup ----------------------------------#
@@ -31,6 +31,8 @@ dataset = diffusion_experiment.dataset
 renderer = diffusion_experiment.renderer
 prior = diffusion_experiment.prior
 
+print(diffusion)
+
 policy = Policy(diffusion, dataset.normalizer)
 
 #---------------------------------- main loop ----------------------------------#
@@ -50,6 +52,14 @@ cond = {
 ## observations for rendering
 rollout = [observation.copy()]
 
+def get_prior(cond):
+    cond = policy._format_conditions(cond, 1)
+    prior = utils.to_np(diffusion.prior(cond))
+    normed_observations = prior[:, :, dataset.normalizer.action_dim:]
+    prior = dataset.normalizer.unnormalize(normed_observations, 'observations')
+    return prior
+
+
 total_reward = 0
 for t in range(env.max_episode_steps):
 
@@ -64,8 +74,8 @@ for t in range(env.max_episode_steps):
         sequence = samples.observations[0]
 
         if args.diffusion == 'SBDiffusion':
-            prior_sample = prior({k:torch.tensor(np.array([v]), device='cuda', dtype=torch.float32) for k,v in cond.items()}, 'cuda')
-            renderer.composite(join(args.savepath, 'prior.png'), prior_sample.detach().cpu().numpy()[:, :, 2:], ncol=1)
+            prior_sample = get_prior(cond) # diffusion.prior({k:torch.tensor(np.array([v]), device='cuda', dtype=torch.float32) for k,v in cond.items()})
+            renderer.composite(join(args.savepath, 'prior.png'), prior_sample, ncol=1)
     # pdb.set_trace()
 
     # ####
