@@ -9,7 +9,7 @@ import diffuser.utils as utils
 
 
 class Parser(utils.Parser): # these are the args present in parse_args
-    dataset: str = 'maze2d-large-v1'#'maze2d-large-v1' #
+    dataset: str = 'maze2d-medium-v1'#'maze2d-large-v1' #
     config: str = 'config.maze2d'
 
 #---------------------------------- setup ----------------------------------#

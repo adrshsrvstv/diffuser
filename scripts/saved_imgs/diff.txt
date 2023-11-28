@@ -1,0 +1,88 @@
+diff --git a/config/maze2d.py b/config/maze2d.py
+index 367a9ec..87a1508 100644
+--- a/config/maze2d.py
++++ b/config/maze2d.py
+@@ -40,9 +40,9 @@ base = {
+     'diffusion': {
+         ## model
+         'model': 'models.TemporalUnet',
+-        'diffusion': 'GaussianDiffusion',
+-        # 'diffusion': 'SBDiffusion',
+-        'prior': 'BasePrior',
++        # 'diffusion': 'GaussianDiffusion',
++        'diffusion': 'SBDiffusion',
++        'prior': 'MLPTrajectoryPrior',
+         'nfe': 63,
+         'horizon': 256,
+         'n_diffusion_steps': 256,
+@@ -86,9 +86,9 @@ base = {
+     },
+ 
+     'plan': {
+-        'diffusion': 'GaussianDiffusion',
+-        # 'diffusion': 'SBDiffusion',
+-        'prior': 'BasePrior',
++        # 'diffusion': 'GaussianDiffusion',
++        'diffusion': 'SBDiffusion',
++        'prior': 'MLPTrajectoryPrior',
+         'nfe': 63,
+         'n_train_steps': 25e4,
+ 
+@@ -146,7 +146,7 @@ maze2d_medium_v1 = {
+     },
+     'plan': {
+         'horizon': 256,
+-        'n_diffusion_steps': 5,
++        'n_diffusion_steps': 16,
+         'nfe': 4,
+     },
+ }
+diff --git a/scripts/benchmark_maze2d.py b/scripts/benchmark_maze2d.py
+index 80245b5..d1b4f5a 100644
+--- a/scripts/benchmark_maze2d.py
++++ b/scripts/benchmark_maze2d.py
+@@ -13,7 +13,7 @@ from experiments import *
+ 
+ results = PrettyTable(['Model', 'Prior', 'Diffusion Steps', 'NFE', 'Config Training Steps', 'Training Steps', 'Time/plan', 'Score'])
+ 
+-experiment = score_vs_training_steps_for_sb_with_MLP_prior
++experiment = score_vs_training_steps_for_ddpm_maze2d_medium
+ 
+ dataset = experiment['dataset']
+ horizon = experiment['horizon']
+diff --git a/scripts/experiments.py b/scripts/experiments.py
+index 40206de..a5ae181 100644
+--- a/scripts/experiments.py
++++ b/scripts/experiments.py
+@@ -169,12 +169,10 @@ score_vs_training_steps_for_ddpm_maze2d_medium =  {
+     'horizon': 256,
+     'batch_size': 200,
+     'configs': [
+-        ('GaussianDiffusion', '-', 16, '-', 5e5, '400000'),
+-        ('GaussianDiffusion', '-', 16, '-', 5e5, '350000'),
+-        ('GaussianDiffusion', '-', 16, '-', 5e5, '300000'),
+-        ('GaussianDiffusion', '-', 16, '-', 5e5, '250000'),
+-        ('GaussianDiffusion', '-', 16, '-', 5e5, '200000'),
+-        ('GaussianDiffusion', '-', 16, '-', 5e5, '150000'),
+-        ('GaussianDiffusion', '-', 16, '-', 5e5, '100000'),
++        ('GaussianDiffusion', '-', 5, '-', 25e4, '150000'),
++        ('GaussianDiffusion', '-', 5, '-', 25e4, '100000'),
++        ('GaussianDiffusion', '-', 5, '-', 25e4, '50000'),
++        ('GaussianDiffusion', '-', 5, '-', 25e4, '25000'),
++        ('GaussianDiffusion', '-', 5, '-', 25e4, '10000'),
+     ]
+ }
+\ No newline at end of file
+diff --git a/scripts/plan_maze2d.py b/scripts/plan_maze2d.py
+index 90d54a3..a77016a 100644
+--- a/scripts/plan_maze2d.py
++++ b/scripts/plan_maze2d.py
+@@ -9,7 +9,7 @@ import diffuser.utils as utils
+ 
+ 
+ class Parser(utils.Parser): # these are the args present in parse_args
+-    dataset: str = 'maze2d-large-v1'#'maze2d-large-v1' #
++    dataset: str = 'maze2d-medium-v1'#'maze2d-large-v1' #
+     config: str = 'config.maze2d'
+ 
+ #---------------------------------- setup ----------------------------------#

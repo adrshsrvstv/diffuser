@@ -169,12 +169,10 @@ score_vs_training_steps_for_ddpm_maze2d_medium =  {
     'horizon': 256,
     'batch_size': 200,
     'configs': [
-        ('GaussianDiffusion', '-', 16, '-', 5e5, '400000'),
-        ('GaussianDiffusion', '-', 16, '-', 5e5, '350000'),
-        ('GaussianDiffusion', '-', 16, '-', 5e5, '300000'),
-        ('GaussianDiffusion', '-', 16, '-', 5e5, '250000'),
-        ('GaussianDiffusion', '-', 16, '-', 5e5, '200000'),
-        ('GaussianDiffusion', '-', 16, '-', 5e5, '150000'),
-        ('GaussianDiffusion', '-', 16, '-', 5e5, '100000'),
+        ('GaussianDiffusion', '-', 5, '-', 25e4, '150000'),
+        ('GaussianDiffusion', '-', 5, '-', 25e4, '100000'),
+        ('GaussianDiffusion', '-', 5, '-', 25e4, '50000'),
+        ('GaussianDiffusion', '-', 5, '-', 25e4, '25000'),
+        ('GaussianDiffusion', '-', 5, '-', 25e4, '10000'),
     ]
 }

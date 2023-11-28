@@ -13,7 +13,7 @@ from experiments import *
 
 results = PrettyTable(['Model', 'Prior', 'Diffusion Steps', 'NFE', 'Config Training Steps', 'Training Steps', 'Time/plan', 'Score'])
 
-experiment = score_vs_training_steps_for_sb_with_MLP_prior
+experiment = score_vs_training_steps_for_ddpm_maze2d_medium
 
 dataset = experiment['dataset']
 horizon = experiment['horizon']
