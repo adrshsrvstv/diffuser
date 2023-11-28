@@ -62,60 +62,6 @@ class Conv1dBlock(nn.Module):
     def forward(self, x):
         return self.block(x)
 
-#-----------------------------------------------------------------------------#
-#--------------------------------- attention ---------------------------------#
-#-----------------------------------------------------------------------------#
-
-class Residual(nn.Module):
-    def __init__(self, fn):
-        super().__init__()
-        self.fn = fn
-
-    def forward(self, x, *args, **kwargs):
-        return self.fn(x, *args, **kwargs) + x
-
-class LayerNorm(nn.Module):
-    def __init__(self, dim, eps = 1e-5):
-        super().__init__()
-        self.eps = eps
-        self.g = nn.Parameter(torch.ones(1, dim, 1))
-        self.b = nn.Parameter(torch.zeros(1, dim, 1))
-
-    def forward(self, x):
-        var = torch.var(x, dim=1, unbiased=False, keepdim=True)
-        mean = torch.mean(x, dim=1, keepdim=True)
-        return (x - mean) / (var + self.eps).sqrt() * self.g + self.b
-
-class PreNorm(nn.Module):
-    def __init__(self, dim, fn):
-        super().__init__()
-        self.fn = fn
-        self.norm = LayerNorm(dim)
-
-    def forward(self, x):
-        x = self.norm(x)
-        return self.fn(x)
-
-class LinearAttention(nn.Module):
-    def __init__(self, dim, heads=4, dim_head=32):
-        super().__init__()
-        self.scale = dim_head ** -0.5
-        self.heads = heads
-        hidden_dim = dim_head * heads
-        self.to_qkv = nn.Conv1d(dim, hidden_dim * 3, 1, bias=False)
-        self.to_out = nn.Conv1d(hidden_dim, dim, 1)
-
-    def forward(self, x):
-        qkv = self.to_qkv(x).chunk(3, dim = 1)
-        q, k, v = map(lambda t: einops.rearrange(t, 'b (h c) d -> b h c d', h=self.heads), qkv)
-        q = q * self.scale
-
-        k = k.softmax(dim = -1)
-        context = torch.einsum('b h d n, b h e n -> b h d e', k, v)
-
-        out = torch.einsum('b h d e, b h d n -> b h e n', context, q)
-        out = einops.rearrange(out, 'b h c d -> b (h c) d')
-        return self.to_out(out)
 
 #-----------------------------------------------------------------------------#
 #---------------------------------- sampling ---------------------------------#
@@ -125,6 +71,21 @@ def extract(a, t, x_shape):
     b, *_ = t.shape
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
+
+def compute_gaussian_product_coef(sigma1, sigma2):
+    """ Given p1 = N(x_t|x_0, sigma_1**2) and p2 = N(x_t|x_1, sigma_2**2)
+        return p1 * p2 = N(x_t| coef1 * x0 + coef2 * x1, var) """
+
+    denom = sigma1**2 + sigma2**2
+    coef1 = sigma2**2 / denom
+    coef2 = sigma1**2 / denom
+    var = (sigma1**2 * sigma2**2) / denom
+    return coef1, coef2, var
+
+def increasing_decreasing_beta_schedule(timesteps=1000, linear_start=1e-4, linear_end=2e-2):
+    betas = np.linspace(linear_start ** 0.5, linear_end ** 0.5, timesteps) ** 2
+    betas_inc_dec = np.concatenate([betas[:timesteps // 2], np.flip(betas[:timesteps // 2])])
+    return betas_inc_dec
 
 def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):
     """
@@ -144,7 +105,25 @@ def apply_conditioning(x, conditions, action_dim):
         x[:, t, action_dim:] = val.clone()
     return x
 
+def unsqueeze_xdim(z, xdim):
+    bc_dim = (...,) + (None,) * len(xdim)
+    return z[bc_dim]
 
+def space_indices(num_steps, count):
+    assert count <= num_steps
+
+    if count <= 1:
+        frac_stride = 1
+    else:
+        frac_stride = (num_steps - 1) / (count - 1)
+
+    cur_idx = 0.0
+    taken_steps = []
+    for _ in range(count):
+        taken_steps.append(round(cur_idx))
+        cur_idx += frac_stride
+
+    return taken_steps
 #-----------------------------------------------------------------------------#
 #---------------------------------- losses -----------------------------------#
 #-----------------------------------------------------------------------------#

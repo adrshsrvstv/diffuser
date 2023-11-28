@@ -55,13 +55,23 @@ model_config = utils.Config(
     device=args.device,
 )
 
+prior_config = utils.Config(
+        'utils.'+ args.prior,
+        observation_dim=observation_dim,
+        action_dim=action_dim,
+        horizon=args.horizon,
+        savepath=(args.savepath, 'prior_config.pkl'),
+        device=args.device,
+)
+
 diffusion_config = utils.Config(
-    args.diffusion,
+    'models.'+ args.diffusion,
     savepath=(args.savepath, 'diffusion_config.pkl'),
     horizon=args.horizon,
     observation_dim=observation_dim,
     action_dim=action_dim,
     n_timesteps=args.n_diffusion_steps,
+    nfe=args.nfe,
     loss_type=args.loss_type,
     clip_denoised=args.clip_denoised,
     predict_epsilon=args.predict_epsilon,
@@ -93,8 +103,8 @@ trainer_config = utils.Config(
 #-----------------------------------------------------------------------------#
 
 model = model_config()
-
-diffusion = diffusion_config(model)
+prior = prior_config()
+diffusion = diffusion_config(model, prior)
 
 trainer = trainer_config(diffusion, dataset, renderer)
 

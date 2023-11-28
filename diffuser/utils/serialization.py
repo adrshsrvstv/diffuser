@@ -6,7 +6,7 @@ import pdb
 
 from collections import namedtuple
 
-DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model diffusion ema trainer epoch')
+DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model prior diffusion ema trainer epoch')
 
 def mkdir(savepath):
     """
@@ -37,6 +37,7 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None):
     dataset_config = load_config(*loadpath, 'dataset_config.pkl')
     render_config = load_config(*loadpath, 'render_config.pkl')
     model_config = load_config(*loadpath, 'model_config.pkl')
+    prior_config = load_config(*loadpath, 'prior_config.pkl')
     diffusion_config = load_config(*loadpath, 'diffusion_config.pkl')
     trainer_config = load_config(*loadpath, 'trainer_config.pkl')
 
@@ -47,7 +48,8 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None):
     dataset = dataset_config(seed=seed)
     renderer = render_config()
     model = model_config()
-    diffusion = diffusion_config(model)
+    prior = prior_config()
+    diffusion = diffusion_config(model, prior)
     trainer = trainer_config(diffusion, dataset, renderer)
 
     if epoch == 'latest':
@@ -57,4 +59,4 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None):
 
     trainer.load(epoch)
 
-    return DiffusionExperiment(dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch)
+    return DiffusionExperiment(dataset, renderer, model, prior, diffusion, trainer.ema_model, trainer, epoch) #just a tuple named Diffusion

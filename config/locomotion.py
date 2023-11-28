@@ -23,6 +23,9 @@ base = {
         ## model
         'model': 'models.TemporalUnet',
         'diffusion': 'models.GaussianDiffusion',
+        # 'diffusion': 'SBDiffusion',
+        'prior': 'BasePrior',
+        'nfe': 63,
         'horizon': 32,
         'n_diffusion_steps': 20,
         'action_weight': 10,
