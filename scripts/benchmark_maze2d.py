@@ -13,7 +13,7 @@ from experiments import *
 
 results = PrettyTable(['Model', 'Prior', 'Diffusion Steps', 'NFE', 'Config Training Steps', 'Training Steps', 'Time/plan', 'Score'])
 
-experiment = score_vs_training_steps_for_ddpm_maze2d_medium
+experiment = score_vs_training_steps_for_sb_with_MLP_prior
 
 dataset = experiment['dataset']
 horizon = experiment['horizon']
@@ -95,7 +95,7 @@ for config in experiment['configs']:
     with redirect_stdout(io.StringIO()) as f:
         exp = Experiment(*config)
         exp(conds)
-        results.add_row([*config, f'{np.array(exp.times).mean():6.2f} ± {np.array(exp.times).std():6.2f}', f'{np.array(exp.scores).mean():6.2f} ± {np.array(exp.scores).std():6.2f}'])
+        results.add_row([*config, f'{np.array(exp.times).mean():6.2f} ± {np.array(exp.times).std():6.2f}', f'{np.array(exp.scores).mean():6.2f}']) # ± {np.array(exp.scores).std():6.2f}'])
     print(f'------------Finished benchmarking for {config}.------------\n')
 
 

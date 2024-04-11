@@ -88,7 +88,7 @@ base = {
     'plan': {
         # 'diffusion': 'GaussianDiffusion',
         'diffusion': 'SBDiffusion',
-        'prior': 'StraightLinePrior',
+        'prior': 'BasePrior',
         'nfe': 63,
         'n_train_steps': 25e4,
 
