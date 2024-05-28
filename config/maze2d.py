@@ -42,7 +42,9 @@ base = {
         'model': 'models.TemporalUnet',
         # 'diffusion': 'GaussianDiffusion',
         'diffusion': 'SBDiffusion',
-        'prior': 'MLPTrajectoryPrior',
+        'prior': 'BasePrior',
+        # 'prior': 'StraightLinePrior',
+        # 'prior': 'MLPTrajectoryPrior',
         'nfe': 63,
         'horizon': 256,
         'n_diffusion_steps': 256,
@@ -141,13 +143,13 @@ maze2d_umaze_v1 = {
 maze2d_medium_v1 = {
     'diffusion': {
         'horizon': 256,
-        'n_diffusion_steps': 5,
-        'nfe': 4,
+        'n_diffusion_steps': 1000,
+        'nfe': 1,
     },
     'plan': {
         'horizon': 256,
         'n_diffusion_steps': 16,
-        'nfe': 4,
+        'nfe': 1,
     },
 }
 
